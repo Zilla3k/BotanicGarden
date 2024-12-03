@@ -6,6 +6,14 @@ export default {
   ],
   theme: {
     extend: {},
+    colors:{
+      white: '#fff',
+      black: '#000',
+      'btn-green': {
+        DEFAULT: '#e6eddb',
+        hover: '#dfe6d5',
+      },
+    }
   },
   plugins: [],
-}
+};
