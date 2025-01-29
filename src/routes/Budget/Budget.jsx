@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import { Navbar } from '../../components/Navbar/Navbar';
 import { Footer } from '../../components/Footer/Footer';
 
@@ -7,25 +6,109 @@ export function Budget() {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    cep: '',
     address: '',
-    service: '',
-    optional: '',
-    description: '',
+    residenceNumber: '',
+    services: [],
     poolSize: '',
+    poolVolume: '',
+    poolType: '',
     yardSize: '',
+    yardType: '',
     roofSize: '',
     wallSize: '',
+    description: '',
   });
+
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleServiceChange = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setFormData({ ...formData, services: [...formData.services, value] });
+    } else {
+      setFormData({
+        ...formData,
+        services: formData.services.filter((service) => service !== value),
+      });
+    }
+  };
+
+  const handleCepBlur = async (e) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          setFormData({
+            ...formData,
+            address: `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`,
+          });
+        } else {
+          setErrors({ ...errors, cep: 'CEP não encontrado' });
+        }
+      } catch (errors) {
+        setErrors({ ...errors, cep: 'Erro ao buscar CEP' });
+      }
+    } else {
+      setErrors({ ...errors, cep: 'CEP inválido' });
+    }
+  };
+
+  const generateWhatsAppLink = (data) => {
+    const message =
+      `Olá, gostaria de agendar um serviço com os seguintes dados:\n\n` +
+      `*Nome:* ${data.name}\n` +
+      `*Telefone:* ${data.phone}\n` +
+      `*CEP:* ${data.cep}\n` +
+      `*Endereço:* ${data.address}\n` +
+      `*Número da Residência:* ${data.residenceNumber}\n` +
+      `*Serviços:* ${data.services.join(', ')}\n` +
+      (data.poolSize ? `*Tamanho da Piscina (m²):* ${data.poolSize}\n` : '') +
+      (data.poolVolume
+        ? `*Litragem da Piscina (litros):* ${data.poolVolume}\n`
+        : '') +
+      (data.poolType ? `*Tipo de Piscina:* ${data.poolType}\n` : '') +
+      (data.yardSize ? `*Tamanho do Quintal (m²):* ${data.yardSize}\n` : '') +
+      (data.yardType ? `*Tipo de Jardim:* ${data.yardType}\n` : '') +
+      (data.roofSize ? `*Tamanho do Telhado (m²):* ${data.roofSize}\n` : '') +
+      (data.wallSize ? `*Tamanho do Muro (m²):* ${data.wallSize}\n` : '') +
+      `*Descrição:* ${data.description}\n\n` +
+      `Por favor, confirmem o agendamento.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappNumber = '555491538000';
+    return `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form Data Submitted:', formData);
-    alert('Agendamento realizado com sucesso!');
+    const newErrors = {};
+    if (!formData.name) newErrors.name = 'Nome é obrigatório';
+    if (!formData.phone) newErrors.phone = 'Telefone é obrigatório';
+    if (!formData.cep) newErrors.cep = 'CEP é obrigatório';
+    if (!formData.address) newErrors.address = 'Endereço é obrigatório';
+    if (!formData.residenceNumber)
+      newErrors.residenceNumber = 'Número da residência é obrigatório';
+    if (formData.services.length === 0)
+      newErrors.services = 'Selecione pelo menos um serviço';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+    } else {
+      console.log('Form Data Submitted:', formData);
+      const whatsappLink = generateWhatsAppLink(formData);
+      window.open(whatsappLink, '_blank'); // Abre o WhatsApp em uma nova aba
+      alert(
+        'Agendamento realizado com sucesso! Um ticket foi gerado e enviado para o WhatsApp da empresa.',
+      );
+    }
   };
 
   return (
@@ -51,6 +134,9 @@ export function Budget() {
               required
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {errors.name && (
+              <p className="text-red-500 text-sm">{errors.name}</p>
+            )}
           </div>
 
           <div>
@@ -63,6 +149,23 @@ export function Budget() {
               required
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {errors.phone && (
+              <p className="text-red-500 text-sm">{errors.phone}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-medium">CEP</label>
+            <input
+              type="text"
+              name="cep"
+              value={formData.cep}
+              onChange={handleChange}
+              onBlur={handleCepBlur}
+              required
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.cep && <p className="text-red-500 text-sm">{errors.cep}</p>}
           </div>
 
           <div>
@@ -75,68 +178,133 @@ export function Budget() {
               required
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {errors.address && (
+              <p className="text-red-500 text-sm">{errors.address}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium">Serviço</label>
-            <select
-              name="service"
-              value={formData.service}
+            <label className="block text-gray-700 font-medium">
+              Número da Residência
+            </label>
+            <input
+              type="text"
+              name="residenceNumber"
+              value={formData.residenceNumber}
               onChange={handleChange}
               required
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Selecione o serviço</option>
-              <option value="Piscina">Manutenção de Piscina</option>
-              <option value="Jardinagem">Jardinagem</option>
-              <option value="Telhado">Reparos em Telhado</option>
-              <option value="Muro">Reparos em Muro</option>
-            </select>
+            />
+            {errors.residenceNumber && (
+              <p className="text-red-500 text-sm">{errors.residenceNumber}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium">Descrição</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Adicione informações adicionais sobre o serviço"
-            ></textarea>
+            <label className="block text-gray-700 font-medium">Serviços</label>
+            <div className="space-y-2">
+              {[
+                'Manutenção de Piscina',
+                'Jardinagem',
+                'Limpeza de Telhado',
+                'Limpeza de Muro',
+              ].map((service) => (
+                <label key={service} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    value={service}
+                    checked={formData.services.includes(service)}
+                    onChange={handleServiceChange}
+                    className="mr-2"
+                  />
+                  {service}
+                </label>
+              ))}
+            </div>
+            {errors.services && (
+              <p className="text-red-500 text-sm">{errors.services}</p>
+            )}
           </div>
 
-          {formData.service === 'Piscina' && (
-            <div>
-              <label className="block text-gray-700 font-medium">
-                Tamanho da Piscina (m²)
-              </label>
-              <input
-                type="number"
-                name="poolSize"
-                value={formData.poolSize}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {formData.services.includes('Manutenção de Piscina') && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-700 font-medium">
+                  Tamanho da Piscina (m²)
+                </label>
+                <input
+                  type="number"
+                  name="poolSize"
+                  value={formData.poolSize}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium">
+                  Litragem da Piscina (litros)
+                </label>
+                <input
+                  type="number"
+                  name="poolVolume"
+                  value={formData.poolVolume}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium">
+                  Tipo de Piscina
+                </label>
+                <select
+                  name="poolType"
+                  value={formData.poolType}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione o tipo</option>
+                  <option value="Fibra">Fibra</option>
+                  <option value="Vinil">Vinil</option>
+                  <option value="Alvenaria">Alvenaria</option>
+                </select>
+              </div>
             </div>
           )}
 
-          {formData.service === 'Jardinagem' && (
-            <div>
-              <label className="block text-gray-700 font-medium">
-                Tamanho do Quintal (m²)
-              </label>
-              <input
-                type="number"
-                name="yardSize"
-                value={formData.yardSize}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {formData.services.includes('Jardinagem') && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-700 font-medium">
+                  Tamanho do Quintal (m²)
+                </label>
+                <input
+                  type="number"
+                  name="yardSize"
+                  value={formData.yardSize}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium">
+                  Tipo de Jardim
+                </label>
+                <select
+                  name="yardType"
+                  value={formData.yardType}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione o tipo</option>
+                  <option value="Gramado">Gramado</option>
+                  <option value="Flores">Flores</option>
+                  <option value="Horta">Horta</option>
+                </select>
+              </div>
             </div>
           )}
 
-          {formData.service === 'Telhado' && (
+          {formData.services.includes('Limpeza de Telhado') && (
             <div>
               <label className="block text-gray-700 font-medium">
                 Tamanho do Telhado (m²)
@@ -151,7 +319,7 @@ export function Budget() {
             </div>
           )}
 
-          {formData.service === 'Muro' && (
+          {formData.services.includes('Limpeza de Muro') && (
             <div>
               <label className="block text-gray-700 font-medium">
                 Tamanho do Muro (m²)
@@ -166,6 +334,18 @@ export function Budget() {
             </div>
           )}
 
+          <div>
+            <label className="block text-gray-700 font-medium">Descrição</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="4"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Adicione informações adicionais sobre o serviço"
+            ></textarea>
+          </div>
+
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition duration-300"
@@ -178,135 +358,6 @@ export function Budget() {
       <section>
         <Footer />
       </section>
-
-      <section>
-        <Footer />
-      </section>
-
-      <section>
-        <Footer />
-      </section>
     </>
   );
 }
-
-// const [formData, setFormData] = useState({
-//   services: {
-//     piscinas: false,
-//     jardinagem: false,
-//     telhados: false,
-//   },
-//   date: '',
-//   time: '',
-// });
-
-// const handleChange = (e) => {
-//   const { name, value, type, checked } = e.target;
-//   if (type === 'checkbox') {
-//     setFormData((prev) => ({
-//       ...prev,
-//       services: {
-//         ...prev.services,
-//         [name]: checked,
-//       },
-//     }));
-//   } else {
-//     setFormData((prev) => ({
-//       ...prev,
-//       [name]: value,
-//     }));
-//   }
-// };
-
-// const handleSubmit = (e) => {
-//   e.preventDefault();
-//   console.log('Form data:', formData);
-// return (
-//   <>
-//     <Navbar />
-//     <form
-//       className="p-6 bg-white shadow-md rounded-md max-w-lg mx-auto mt-10"
-//       onSubmit={handleSubmit}
-//     >
-//       <h2 className="text-xl font-bold text-gray-700 mb-4">
-//         Solicitar Orçamento
-//       </h2>
-
-//       {/* Checkbox options */}
-//       <fieldset className="mb-4">
-//         <legend className="text-gray-600">
-//           Selecione os serviços desejados:
-//         </legend>
-//         <label className="block mt-2">
-//           <input
-//             type="checkbox"
-//             name="piscinas"
-//             checked={formData.services.piscinas}
-//             onChange={handleChange}
-//             className="mr-2"
-//           />
-//           Limpeza e manutenção de piscinas
-//         </label>
-//         <label className="block mt-2">
-//           <input
-//             type="checkbox"
-//             name="jardinagem"
-//             checked={formData.services.jardinagem}
-//             onChange={handleChange}
-//             className="mr-2"
-//           />
-//           Jardinagem e paisagismo
-//         </label>
-//         <label className="block mt-2">
-//           <input
-//             type="checkbox"
-//             name="telhados"
-//             checked={formData.services.telhados}
-//             onChange={handleChange}
-//             className="mr-2"
-//           />
-//           Limpeza de telhados e placas solares
-//         </label>
-//       </fieldset>
-
-//       {/* Date and time */}
-//       <div className="mb-4">
-//         <label className="block text-gray-600 mb-2" htmlFor="date">
-//           Data:
-//         </label>
-//         <input
-//           type="date"
-//           id="date"
-//           name="date"
-//           value={formData.date}
-//           onChange={handleChange}
-//           className="border-gray-300 border rounded-md p-2 w-full"
-//           required
-//         />
-//       </div>
-
-//       <div className="mb-4">
-//         <label className="block text-gray-600 mb-2" htmlFor="time">
-//           Horário:
-//         </label>
-//         <input
-//           type="time"
-//           id="time"
-//           name="time"
-//           value={formData.time}
-//           onChange={handleChange}
-//           className="border-gray-300 border rounded-md p-2 w-full"
-//           required
-//         />
-//       </div>
-
-//       {/* Submit button */}
-//       <button
-//         type="submit"
-//         className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
-//       >
-//         Enviar Solicitação
-//       </button>
-//     </form>
-//   </>
-// );
