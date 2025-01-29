@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Navbar } from '../../components/Navbar/Navbar';
-import { Footer } from '../../components/Footer/Footer';
+import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 
 export function Budget() {
   const [formData, setFormData] = useState({
@@ -50,10 +50,11 @@ export function Budget() {
             ...formData,
             address: `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`,
           });
+          setErrors({ ...errors, cep: '' });
         } else {
           setErrors({ ...errors, cep: 'CEP não encontrado' });
         }
-      } catch (errors) {
+      } catch {
         setErrors({ ...errors, cep: 'Erro ao buscar CEP' });
       }
     } else {
@@ -111,6 +112,57 @@ export function Budget() {
     }
   };
 
+  const formatPhone = (value) => {
+    value = value.replace(/\D/g, ''); // Remove não numéricos
+
+    if (value.length > 11) {
+      value = value.slice(0, 11); // Limita a 11 dígitos
+    }
+
+    let formatted = '';
+    if (value.length > 0) {
+      formatted = `(${value.slice(0, 2)}`;
+    }
+    if (value.length > 2) {
+      formatted += `) ${value.slice(2, 7)}`;
+    }
+    if (value.length > 7) {
+      formatted += `-${value.slice(7, 11)}`;
+    }
+
+    return formatted;
+  };
+
+  const handlePhoneChange = (e) => {
+    const formattedPhone = formatPhone(e.target.value);
+    setFormData({ ...formData, phone: formattedPhone });
+  };
+
+  const formatCEP = (value) => {
+    value = value.replace(/\D/g, ''); // Remove não numéricos
+
+    if (value.length > 8) {
+      value = value.slice(0, 8); // Limita a 8 dígitos
+    }
+
+    let formatted = '';
+    if (value.length > 0) {
+      formatted = `${value.slice(0, 5)}`;
+    }
+    if (value.length > 5) {
+      formatted += `-${value.slice(5, 8)}`;
+    }
+
+    return formatted;
+  };
+
+  const handleChangeCep = (e) => {
+    const { name, value } = e.target;
+    const formattedValue =
+      name === 'phone' ? formatPhone(value) : formatCEP(value);
+    setFormData({ ...formData, [name]: formattedValue });
+  };
+
   return (
     <>
       <Navbar />
@@ -132,7 +184,7 @@ export function Budget() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
             />
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
@@ -145,9 +197,9 @@ export function Budget() {
               type="tel"
               name="phone"
               value={formData.phone}
-              onChange={handleChange}
+              onChange={handlePhoneChange}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
             />
             {errors.phone && (
               <p className="text-red-500 text-sm">{errors.phone}</p>
@@ -160,10 +212,10 @@ export function Budget() {
               type="text"
               name="cep"
               value={formData.cep}
-              onChange={handleChange}
+              onChange={handleChangeCep}
               onBlur={handleCepBlur}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
             />
             {errors.cep && <p className="text-red-500 text-sm">{errors.cep}</p>}
           </div>
@@ -176,7 +228,7 @@ export function Budget() {
               value={formData.address}
               onChange={handleChange}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
             />
             {errors.address && (
               <p className="text-red-500 text-sm">{errors.address}</p>
@@ -193,7 +245,7 @@ export function Budget() {
               value={formData.residenceNumber}
               onChange={handleChange}
               required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
             />
             {errors.residenceNumber && (
               <p className="text-red-500 text-sm">{errors.residenceNumber}</p>
@@ -237,7 +289,7 @@ export function Budget() {
                   name="poolSize"
                   value={formData.poolSize}
                   onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
                 />
               </div>
               <div>
@@ -249,7 +301,7 @@ export function Budget() {
                   name="poolVolume"
                   value={formData.poolVolume}
                   onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
                 />
               </div>
               <div>
@@ -260,7 +312,7 @@ export function Budget() {
                   name="poolType"
                   value={formData.poolType}
                   onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
                 >
                   <option value="">Selecione o tipo</option>
                   <option value="Fibra">Fibra</option>
@@ -282,7 +334,7 @@ export function Budget() {
                   name="yardSize"
                   value={formData.yardSize}
                   onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
                 />
               </div>
               <div>
@@ -293,12 +345,11 @@ export function Budget() {
                   name="yardType"
                   value={formData.yardType}
                   onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
                 >
                   <option value="">Selecione o tipo</option>
                   <option value="Gramado">Gramado</option>
                   <option value="Flores">Flores</option>
-                  <option value="Horta">Horta</option>
                 </select>
               </div>
             </div>
@@ -314,7 +365,7 @@ export function Budget() {
                 name="roofSize"
                 value={formData.roofSize}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
               />
             </div>
           )}
@@ -329,7 +380,7 @@ export function Budget() {
                 name="wallSize"
                 value={formData.wallSize}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
               />
             </div>
           )}
@@ -341,14 +392,14 @@ export function Budget() {
               value={formData.description}
               onChange={handleChange}
               rows="4"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-greenlight"
               placeholder="Adicione informações adicionais sobre o serviço"
             ></textarea>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition duration-300"
+            className="w-full bg-greenlight text-greenhard py-3 rounded-lg hover:bg-greenmedium transition duration-300"
           >
             Confirmar Agendamento
           </button>
